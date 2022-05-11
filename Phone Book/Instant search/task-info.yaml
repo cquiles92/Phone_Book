@@ -1,0 +1,643 @@
+type: edu
+custom_name: stage4
+files:
+- name: src/phonebook/Main.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class Main {
+        public static void main(String[] args) {
+            System.out.println("Hello World!");
+        }
+    }
+  learner_created: false
+- name: test/PhoneBookTest.java
+  visible: false
+  text: "import org.hyperskill.hstest.stage.StageTest;\nimport org.hyperskill.hstest.testcase.CheckResult;\n\
+    import org.hyperskill.hstest.testcase.TestCase;\n\nimport java.util.ArrayList;\n\
+    import java.util.Arrays;\nimport java.util.List;\nimport java.util.regex.Matcher;\n\
+    import java.util.regex.Pattern;\n\npublic class PhoneBookTest extends StageTest\
+    \ {\n\n    private long timeOnTestStart;\n    \n    @Override\n    public List<TestCase>\
+    \ generate() {\n        timeOnTestStart = System.currentTimeMillis();\n      \
+    \  return Arrays.asList(\n            new TestCase().setTimeLimit(30 * 60 * 1000)\n\
+    \        );\n    }\n    \n    \n    private CheckResult checkPhrases(String reply,\
+    \ String... phrases) {\n        reply = reply.toLowerCase();\n        for (String\
+    \ phrase : phrases) {\n            if (!reply.contains(phrase.toLowerCase()))\
+    \ {\n                return CheckResult.wrong(\"Not found the part `\" + phrase\
+    \ + \"` in your output.\");\n            }\n        }\n        return CheckResult.correct();\n\
+    \    }\n    \n    private List<String> findAll(String reply, String regex) {\n\
+    \        Matcher matcher = Pattern.compile(regex).matcher(reply);\n        List<String>\
+    \ groups = new ArrayList<>();\n        while (matcher.find()) {\n            groups.add(matcher.group());\n\
+    \        }\n        return groups;\n    }\n    \n    private String timeRegex\
+    \ = \"(\\\\d+)\\\\s*min.*?(\\\\d+)\\\\s*sec.*?(\\\\d+)\\\\s*ms\";\n    private\
+    \ Pattern timeRegexPattern = Pattern.compile(timeRegex);\n    \n    private long\
+    \ parseTimestamp(String timestamp) {\n        Matcher matcher = timeRegexPattern.matcher(timestamp);\n\
+    \        if (!matcher.matches() || matcher.groupCount() < 3) {\n            throw\
+    \ new IllegalStateException(\"???Not matches the line \" + timestamp);\n     \
+    \   }\n        int min = Integer.parseInt(matcher.group(1));\n        int sec\
+    \ = Integer.parseInt(matcher.group(2));\n        int ms = Integer.parseInt(matcher.group(3));\n\
+    \        return ms + sec * 1000 + min * 1000 * 60;\n    }\n    \n    \n    \n\
+    \    @Override\n    public CheckResult check(String reply, Object clue) {\n  \
+    \      long realTime = System.currentTimeMillis() - timeOnTestStart;\n       \
+    \ reply = reply.toLowerCase();\n        CheckResult res = checkPhrases(reply,\n\
+    \                \"found\",\n                \"min.\",\n                \"sec.\"\
+    ,\n                \"ms.\",\n                \"sorting time\",\n             \
+    \   \"searching time\",\n                \"linear search\",\n                \"\
+    bubble sort\",\n                \"jump search\",\n                \"quick sort\"\
+    ,\n                \"binary search\",\n                \"hash table\",\n     \
+    \           \"creating time\"\n        );\n        if (!res.isCorrect()) {\n \
+    \           return res;\n        }\n    \n        List<String> stat1 = findAll(reply,\
+    \ \"500 / 500\");\n        List<String> stat2 = findAll(reply, \"500/500\");\n\
+    \    \n        if (stat1.size() + stat2.size() < 4) {\n            return CheckResult.wrong(\"\
+    Your output should contain 4 times the phrase `500 / 500`\");\n        }\n   \
+    \ \n        List<String> timestamps = findAll(reply, timeRegex);\n        if (timestamps.size()\
+    \ != 10) {\n            return CheckResult.wrong(\"Your output should contain\
+    \ 10 timer outputs, but found \"\n                    + timestamps.size());\n\
+    \        }\n        // should not fail..\n        long t1 = parseTimestamp(timestamps.get(0));\n\
+    \        long t2 = parseTimestamp(timestamps.get(1));\n        long t3 = parseTimestamp(timestamps.get(2));\n\
+    \        long t4 = parseTimestamp(timestamps.get(3));\n        // qsort\n    \
+    \    long t5 = parseTimestamp(timestamps.get(4));\n        long t6 = parseTimestamp(timestamps.get(5));\n\
+    \        long t7 = parseTimestamp(timestamps.get(6));\n        // hash table\n\
+    \        long t8 = parseTimestamp(timestamps.get(7));\n        long t9 = parseTimestamp(timestamps.get(8));\n\
+    \        long t10 = parseTimestamp(timestamps.get(9));\n    \n        if (Math.abs(t3\
+    \ + t4 - t2) > 100) {\n            return CheckResult.wrong(\"Your third and fourth\
+    \ timer outputs in total (bubble sorting and searching) \" +\n               \
+    \     \"should be equal to the second (total search time).\");\n        }\n  \
+    \      if (Math.abs(t6 + t7 - t5) > 100) {\n            return CheckResult.wrong(\"\
+    Your 6-th and 7-th timer outputs in total (qsort and searching) \" +\n       \
+    \             \"should be equal to the 5-th (total search time).\");\n       \
+    \ }\n        if (Math.abs(t9 + t10 - t8) > 100) {\n            return CheckResult.wrong(\"\
+    Your 9-th and 10-th timer outputs in total (creating hashtable and searching)\
+    \ \" +\n                    \"should be equal to the 8-th (total search time).\"\
+    );\n        }\n    \n        long estimatedTime = t1 + t2 + t5 + t8;\n       \
+    \ if (realTime < 1000) {\n            return CheckResult.wrong(\"Your program\
+    \ completes too fast. Faster than a second!\");\n        }\n\n        if (Math.abs(estimatedTime\
+    \ - realTime) > estimatedTime * 0.3) {\n            return CheckResult.wrong(\"\
+    Your estimated time is not similar to real time the program works. \" +\n    \
+    \                \"Real time: \" + realTime + \"ms, estimated time: \" + estimatedTime\
+    \ + \"ms\");\n        }\n        \n        if (t8 >= t5) {\n            return\
+    \ CheckResult.wrong(\"Your hashtable works slower, than quick sort + binary search.\"\
+    );\n        }\n        return CheckResult.correct();\n    }\n}\n"
+  learner_created: false
+- name: src/phonebook/Person.java
+  visible: true
+  text: |
+    package phonebook;
+
+    import java.util.Objects;
+
+    public class Person implements Comparable<Person> {
+        private final int phoneNumber;
+        private final String name;
+
+        public Person(int phoneNumber, String name) {
+            this.phoneNumber = phoneNumber;
+            this.name = name;
+        }
+
+        public int getPhoneNumber() {
+            return phoneNumber;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public int compareTo(Person person) {
+            return this.name.compareTo(person.getName());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Person person = (Person) o;
+            return phoneNumber == person.phoneNumber && name.equals(person.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(phoneNumber, name);
+        }
+    }
+  learner_created: true
+- name: src/phonebook/SearchContext.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class SearchContext {
+        private SearchStrategy searchStrategy;
+
+        public SearchContext(SearchStrategy searchStrategy) {
+            this.searchStrategy = searchStrategy;
+        }
+
+        public void executeSearch(Checklist checklist, Phonebook phoneBook) {
+            this.searchStrategy.search(checklist, phoneBook);
+        }
+
+        public void setSearchStrategy(SearchStrategy newSearchStrategy) {
+            searchStrategy = newSearchStrategy;
+        }
+    }
+  learner_created: true
+- name: src/phonebook/QuickSortStrategy.java
+  visible: true
+  text: |
+    package phonebook;
+
+    import java.util.Random;
+
+    public class QuickSortStrategy implements SortStrategy {
+        @Override
+        public Phonebook sort(Phonebook phonebook) {
+            Person[] arrayToSort = phonebook.getPeopleInDirectory();
+
+            quickSort(arrayToSort);
+
+            return new Phonebook(arrayToSort);
+        }
+
+        @Override
+        public Phonebook sort(Phonebook phonebook, long timeLimit) {
+            Person[] arrayToSort = phonebook.getPeopleInDirectory();
+
+            quickSort(arrayToSort, timeLimit);
+
+            return new Phonebook(arrayToSort);
+        }
+
+        private void quickSort(Person[] arr) {
+            quickSort(arr, 0, arr.length - 1);
+        }
+
+        private void quickSort(Person[] arrayToSort, long timeLimit) {
+            quickSort(arrayToSort, arrayToSort.length - 1, timeLimit);
+        }
+
+        private void quickSort(Person[] arr, int lowIndex, int highIndex) {
+            //if inner array = size 1
+            if (lowIndex >= highIndex) {
+                return;
+            }
+
+            //pivot from the median
+            int pivotIndex = new Random().nextInt(highIndex - lowIndex) + lowIndex;
+            Person pivot = arr[pivotIndex];
+            swap(arr, pivotIndex, highIndex);
+
+            int leftPointer = partition(arr, lowIndex, highIndex, pivot);
+
+            quickSort(arr, lowIndex, leftPointer - 1);
+            quickSort(arr, leftPointer + 1, highIndex);
+        }
+
+        private void quickSort(Person[] arr, int highIndex, long timeLimit) {
+            //if inner array = size 1
+            if (0 >= highIndex) {
+                return;
+            }
+
+            //time code
+            long timeElapsed = System.currentTimeMillis();
+            if (timeElapsed >= timeLimit) {
+                return;
+            }
+
+            //pivot from the median
+            int pivotIndex = new Random().nextInt(highIndex);
+            Person pivot = arr[pivotIndex];
+            swap(arr, pivotIndex, highIndex);
+
+            int leftPointer = partition(arr, 0, highIndex, pivot);
+
+            quickSort(arr, 0, leftPointer - 1);
+            quickSort(arr, leftPointer + 1, highIndex);
+        }
+
+        private int partition(Person[] arr, int lowIndex, int highIndex, Person pivot) {
+            int leftPointer = lowIndex;
+            int rightPointer = highIndex;
+
+            while (leftPointer < rightPointer) {
+                while (arr[leftPointer].getName().compareTo(pivot.getName()) <= 0 && leftPointer < rightPointer) {
+                    leftPointer++;
+                }
+
+                while (arr[rightPointer].getName().compareTo(pivot.getName()) >= 0 && leftPointer < rightPointer) {
+                    rightPointer--;
+                }
+                swap(arr, leftPointer, rightPointer);
+            }
+            swap(arr, leftPointer, highIndex);
+            return leftPointer;
+        }
+
+        private void swap(Person[] arr, int firstIndex, int secondIndex) {
+            Person temp = arr[firstIndex];
+            arr[firstIndex] = arr[secondIndex];
+            arr[secondIndex] = temp;
+        }
+    }
+  learner_created: true
+- name: src/phonebook/SearchStrategy.java
+  visible: true
+  text: |
+    package phonebook;
+
+
+    public interface SearchStrategy {
+        void search(Checklist checklist, Phonebook phonebook);
+
+    }
+  learner_created: true
+- name: src/phonebook/Phonebook.java
+  visible: true
+  text: |
+    package phonebook;
+
+    import java.io.*;
+    import java.util.ArrayList;
+    import java.util.List;
+
+    //CLASS TO HOLD CONTENTS OF MAIN DIRECTORY TO SEARCH THROUGH
+    public class Phonebook {
+        private final Person[] peopleInDirectory;
+
+        public Phonebook(File directoryFile) {
+            peopleInDirectory = populateDirectory(directoryFile);
+        }
+
+        public Phonebook(Person[] listOfPeople) {
+            peopleInDirectory = listOfPeople;
+        }
+
+        private Person[] populateDirectory(File directoryFile) {
+            List<Person> directory = new ArrayList<>();
+            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(directoryFile))) {
+                String currentLine;
+                while ((currentLine = bufferedReader.readLine()) != null) {
+                    int index = currentLine.indexOf(" ");//split on the very first space
+                    int phoneNumber = Integer.parseInt(currentLine.substring(0, index));
+                    String name = currentLine.substring(index).strip();
+                    directory.add(new Person(phoneNumber, name));
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return directory.toArray(new Person[0]);
+        }
+
+        public Person[] getPeopleInDirectory() {
+            return peopleInDirectory;
+        }
+
+    }
+  learner_created: true
+- name: src/phonebook/SearchProgram.java
+  visible: true
+  text: |
+    package phonebook;
+
+    import java.io.File;
+
+    public class SearchProgram {
+        private final Checklist listOfPeople;
+        private final Phonebook directory;
+        private final SearchContext searchContext;
+
+
+        public SearchProgram(File listOfPeople, File dataSource) {
+            this.listOfPeople = new Checklist(listOfPeople);
+            this.directory = new Phonebook(dataSource);
+            this.searchContext = new SearchContext(null);
+        }
+
+        public void start() {
+            long timeLimit;
+
+            //Linear Search
+            {
+                SearchStrategy searchStrategy = new LinearSearch();
+                long timeElapsed = System.currentTimeMillis();
+
+                searchContext.setSearchStrategy(searchStrategy);
+                System.out.println("Start searching (linear search)...");
+                searchContext.executeSearch(listOfPeople, directory);
+                timeElapsed = Math.abs(System.currentTimeMillis() - timeElapsed);
+                System.out.println("Time taken: " + printTimeTaken(timeElapsed));
+                timeLimit = timeElapsed * 10;
+            }
+
+            System.out.println();
+
+            //bubble sort + jump search
+            {
+                SortStrategy sortStrategy = new BubbleSortStrategy();
+                SearchStrategy searchStrategy = new JumpSearch();
+                long sortTime = System.currentTimeMillis();
+
+                System.out.println("Start searching (bubble sort + jump search)...");
+                Phonebook bubbleSortedDirectory = sortStrategy.sort(directory, timeLimit);
+                sortTime = Math.abs(System.currentTimeMillis() - sortTime);
+                searchAndSortProcedure(sortTime, bubbleSortedDirectory, searchStrategy);
+            }
+
+            System.out.println();
+
+            //quicksort + linear search
+            {
+                SortStrategy sortStrategy = new QuickSortStrategy();
+                SearchStrategy searchStrategy = new BinarySearch();
+                long sortTime = System.currentTimeMillis();
+
+                System.out.println("Start searching (quick sort + binary search)...");
+                Phonebook quickSortedDirectory = sortStrategy.sort(directory);
+                sortTime = Math.abs(System.currentTimeMillis() - sortTime);
+                searchAndSortProcedure(sortTime, quickSortedDirectory, searchStrategy);
+            }
+
+            //Hash
+            {
+
+            }
+        }
+
+        private void searchAndSortProcedure(long sortTime, Phonebook sortedDirectory, SearchStrategy searchStrategy) {
+            long searchTime;
+            //if the given directory is sorted
+            if (sortedDirectory != directory) {
+                searchContext.setSearchStrategy(searchStrategy);
+                searchTime = System.currentTimeMillis();
+                searchContext.executeSearch(listOfPeople, sortedDirectory);
+            } //sort was terminated early and linear search is being called
+            else {
+                searchContext.setSearchStrategy(new LinearSearch());
+                searchTime = System.currentTimeMillis();
+                searchContext.executeSearch(listOfPeople, directory);
+            }
+            searchTime = Math.abs(System.currentTimeMillis() - searchTime);
+            System.out.println("Time taken: " + printTimeTaken(sortTime + searchTime));
+            System.out.print("Sorting time: " + printTimeTaken(sortTime));
+            if (sortedDirectory == directory) {
+                System.out.println("  - STOPPED, moved to linear search");
+            } else {
+                System.out.println();
+            }
+            System.out.println("Searching time: " + printTimeTaken(searchTime));
+        }
+
+        private static String printTimeTaken(long timeTaken) {
+            int milliseconds = (int) timeTaken % 1000;
+            timeTaken /= 1000;
+            int seconds = (int) timeTaken % 60;
+            timeTaken /= 60;
+            int minutes = (int) timeTaken % 60;
+
+            return String.format("%d min. %d sec. %d ms.", minutes, seconds, milliseconds);
+        }
+    }
+  learner_created: true
+- name: src/phonebook/SortStrategy.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public interface SortStrategy {
+        //sort directory file
+        Phonebook sort(Phonebook phonebook);
+
+        //timeLimit enforces the method to return the original value if time exceeds limit
+        Phonebook sort(Phonebook phonebook, long timeLimit);
+
+    }
+  learner_created: true
+- name: src/phonebook/Checklist.java
+  visible: true
+  text: |
+    package phonebook;
+
+
+    import java.io.BufferedReader;
+    import java.io.File;
+    import java.io.FileReader;
+    import java.io.IOException;
+    import java.util.ArrayList;
+    import java.util.List;
+
+    // CLASS TO HOLD PEOPLE I'M LOOKING FOR
+    public class Checklist{
+        private final File peopleToSearch;
+        private final String[] namesOfPeople;
+
+        public Checklist(File peopleToSearch) {
+            this.peopleToSearch = peopleToSearch;
+            namesOfPeople = listOfNames();
+
+        }
+
+        private String[] listOfNames() {
+            List<String> names = new ArrayList<>();
+            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(peopleToSearch))) {
+                String currentLine;
+                while ((currentLine = bufferedReader.readLine()) != null) {
+                    names.add(currentLine);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return names.toArray(new String[0]);
+        }
+
+        public String[] getNamesOfPeople() {
+            return namesOfPeople;
+        }
+
+        int getNumberOfList() {
+            return namesOfPeople.length;
+        }
+    }
+  learner_created: true
+- name: src/phonebook/BinarySearch.java
+  visible: true
+  text: |
+    package phonebook;
+
+
+    public class BinarySearch implements SearchStrategy {
+        @Override
+        public void search(Checklist checklist, Phonebook phonebook) {
+            String[] listOfPeople = checklist.getNamesOfPeople();
+            int numberFound = 0;
+
+            for (String person : listOfPeople) {
+                numberFound += findPerson(person, phonebook);
+            }
+
+            System.out.printf("Found %d / %d entries. ", numberFound, checklist.getNumberOfList());
+        }
+
+        private int findPerson(String person, Phonebook phonebook) {
+            Person[] directory = phonebook.getPeopleInDirectory();
+            int left = 0;
+            int right = directory.length - 1;
+
+            while (left <= right) {
+                int mid = left + ((right - left) / 2);
+                String currentName = directory[mid].getName();
+                if (currentName.equals(person)) {
+                    return 1;
+                } else if (person.compareTo(currentName) > 0) {
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
+            }
+            return 0;
+        }
+
+
+    }
+  learner_created: true
+- name: src/phonebook/JumpSearch.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class JumpSearch implements SearchStrategy {
+        @Override
+        public void search(Checklist checklist, Phonebook phonebook) {
+            String[] peopleToLookFor = checklist.getNamesOfPeople();
+            Person[] peopleInDirectory = phonebook.getPeopleInDirectory();
+            int numberFound = 0;
+
+            int block = (int) Math.floor(Math.sqrt(peopleInDirectory.length));
+
+            //for every person in people to look for
+            for (String person : peopleToLookFor) {
+                int index = 0;
+                while (true) {
+                    String currentName = peopleInDirectory[index].getName();
+                    //if the name is found
+                    if (currentName.equals(person)) {
+                        numberFound++;
+                        break;
+                    }// if the name is "smaller" go forwards
+                    else if (person.compareTo(currentName) > 0) {
+                        //if at end of list and last element is still smaller
+                        if (index == peopleInDirectory.length - 1) {
+                            break;
+                        }
+                        //go ahead either by block or if uneven blocks to the end of array
+                        //in order to avoid out of bound exceptions
+                        index = Math.min(index + block, peopleInDirectory.length - 1);
+                    } else {
+                        //linear search backwards
+                        for (int i = 1; i < block && index - i >= 0; i++) {
+                            currentName = peopleInDirectory[index - i].getName();
+                            //if we found the element
+                            if (person.equals(currentName)) {
+                                numberFound++;
+                                break;
+                            }
+                        }
+                        //didn't find it and the element is not in the list at all
+                        break;
+                    }
+                }
+            }
+
+            System.out.printf("Found %d / %d entries. ", numberFound, checklist.getNumberOfList());
+
+
+        }
+    }
+  learner_created: true
+- name: src/phonebook/LinearSearch.java
+  visible: true
+  text: |
+    package phonebook;
+
+
+    public class LinearSearch implements SearchStrategy {
+
+        @Override
+        public void search(Checklist checklist, Phonebook phonebook) {
+            String[] peopleToLookFor = checklist.getNamesOfPeople();
+            Person[] peopleInDirectory = phonebook.getPeopleInDirectory();
+            int numberFound = 0;
+
+            for (String personName : peopleToLookFor) {
+                for (Person person : peopleInDirectory) {
+                    if (person.getName().equals(personName)) {
+                        numberFound++;
+                        break;
+                    }
+                }
+            }
+
+            System.out.printf("Found %d / %d entries. ", numberFound, checklist.getNumberOfList());
+        }
+    }
+  learner_created: true
+- name: src/phonebook/BubbleSortStrategy.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class BubbleSortStrategy implements SortStrategy {
+
+        @Override
+        public Phonebook sort(Phonebook phonebook) {
+            Person[] arrayToSort = phonebook.getPeopleInDirectory();
+
+            for (int i = 0; i < arrayToSort.length - 1; i++) {
+                for (int j = 0; j < arrayToSort.length - i - 1; j++) {
+                    if (arrayToSort[j].getName().compareTo(arrayToSort[j + 1].getName()) > 0) {
+                        Person temp = arrayToSort[j];
+                        arrayToSort[j] = arrayToSort[j + 1];
+                        arrayToSort[j + 1] = temp;
+                    }
+                }
+            }
+
+            return new Phonebook(arrayToSort);
+        }
+
+        @Override
+        public Phonebook sort(Phonebook phonebook, long timeLimit) {
+            Person[] arrayToSort = phonebook.getPeopleInDirectory();
+            long currentTime = System.currentTimeMillis();
+
+            for (int i = 0; i < arrayToSort.length - 1; i++) {
+                long timeElapsed = System.currentTimeMillis() - currentTime;
+                for (int j = 0; j < arrayToSort.length - i - 1; j++) {
+                    if (arrayToSort[j].getName().compareTo(arrayToSort[j + 1].getName()) > 0) {
+                        Person temp = arrayToSort[j];
+                        arrayToSort[j] = arrayToSort[j + 1];
+                        arrayToSort[j + 1] = temp;
+                    }
+                }
+                if (timeElapsed >= timeLimit) {
+                    return phonebook;
+                }
+            }
+
+            return new Phonebook(arrayToSort);
+        }
+    }
+  learner_created: true
+- name: src/phonebook/HashManager.java
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/learn/step/7721#comment
+status: Solved
+feedback:
+  message: Well done! You've finished the project. Select a new project on <a href="https://hyperskill.org/projects">JetBrains
+    Academy</a> to continue learning.
+  time: Wed, 11 May 2022 19:38:17 UTC
+record: -1
